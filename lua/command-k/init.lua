@@ -11,11 +11,13 @@ local function handle_response(response)
 	vim.api.nvim_buf_set_lines(0, current_line, current_line, false, lines)
 end
 
+local config = require("command-k.config")
+
 local function send_api_request(prompt)
 	local context = get_surrounding_lines()
 	local data = string.format('{"prompt": "%s", "context": "%s"}', prompt, context)
-	local api_token = "test_test"
-	local api_url = "https://test.com/"
+	local api_token = config.api_token
+	local api_url = config.api_url
 	local cmd = string.format(
 		"curl -s -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer %s' -d '%s' '%s'",
 		api_token,
@@ -34,24 +36,30 @@ local function send_api_request(prompt)
 end
 
 function M.open_prompt()
-	local mode = vim.fn.mode()
-	local prompt = ""
-	if mode == "v" or mode == "V" then
-		vim.cmd('normal! "vy')
-		prompt = vim.fn.getreg("v")
-	end
-
-	local ui = vim.ui
-	local input_options = {
-		prompt = "Prompt: ",
-		multiline = true,
+	local buf = vim.api.nvim_create_buf(false, true)
+	local cursor_pos = vim.api.nvim_win_get_cursor(0)
+	local width = vim.api.nvim_get_option("columns")
+	local height = vim.api.nvim_get_option("lines")
+	local win_opts = {
+		relative = "win",
+		width = math.ceil(width * 0.8),
+		height = math.ceil(height * 0.2),
+		col = cursor_pos[2],
+		row = cursor_pos[1] - 1,
+		style = "minimal",
+		border = "rounded",
 	}
-	ui.input(input_options, function(input)
+	local win = vim.api.nvim_open_win(buf, true, win_opts)
+	vim.api.nvim_buf_set_option(buf, "buftype", "prompt")
+	vim.fn.prompt_setprompt(buf, "Prompt: ")
+	vim.fn.prompt_setcallback(buf, function(input)
+		vim.api.nvim_win_close(win, true)
 		if input then
 			print("You entered: " .. input)
 			send_api_request(input)
 		end
 	end)
+	vim.cmd("startinsert")
 end
 
 function M.setup()
