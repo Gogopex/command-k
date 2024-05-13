@@ -55,7 +55,7 @@ function M.open_prompt()
 end
 
 function M.setup()
-	vim.keymap.set({ "n" }, "<Leader>h", function()
+	vim.keymap.set({ "n", "v" }, "<Cmd>k", function()
 		M.open_prompt()
 	end, { desc = "Trigger AI Code Assist", noremap = true, silent = true })
 end
