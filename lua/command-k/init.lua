@@ -1,11 +1,7 @@
 local M = {}
 
 local function get_surrounding_lines()
-	local current_line = vim.api.nvim_win_get_cursor(0)[1]
-	local total_lines = vim.api.nvim_buf_line_count(0)
-	local start_line = math.max(1, current_line - 5)
-	local end_line = math.min(total_lines, current_line + 5)
-	local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 	return table.concat(lines, "\n")
 end
 
@@ -38,7 +34,13 @@ local function send_api_request(prompt)
 end
 
 function M.open_prompt()
-	local prompt = vim.fn.input("Prompt: ")
+	local mode = vim.fn.mode()
+	local prompt = ""
+	if mode == "v" or mode == "V" then
+		vim.cmd('normal! "vy')
+		prompt = vim.fn.getreg("v")
+	end
+
 	local ui = vim.ui
 	local input_options = {
 		prompt = "Prompt: ",
@@ -47,11 +49,9 @@ function M.open_prompt()
 	ui.input(input_options, function(input)
 		if input then
 			print("You entered: " .. input)
+			send_api_request(input)
 		end
 	end)
-	-- if prompt ~= "" then
-	-- 	send_api_request(prompt)
-	-- end
 end
 
 function M.setup()
